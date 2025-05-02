@@ -1,0 +1,3 @@
+*.o
+ipc
+lib_mlx42/
