@@ -1,10 +1,10 @@
 NAME = ipc
 CC = gcc
-CFLAGS = -Wall -Wextra -Werror -ffast-math -I./include -I$(LIBMLX)/include
+CFLAGS = -O3 -Wall -Wextra -Werror -ffast-math -I./include -I$(LIBMLX)/include
 FSANITIZE = -fsanitize=address
 LIBMLX := lib_mlx42
 LIBS := $(LIBMLX)/build/libmlx42.a -ldl -L/opt/homebrew/lib -lglfw -pthread -lm 
-SOURCES_M := src/main.c src/semaphores.c src/utils.c src/drawer.c src/player.c src/a_star.c
+SOURCES_M := src/main.c src/semaphores.c src/queue.c src/utils.c src/drawer.c src/player.c src/a_star.c
 
 OBJECTS := $(SOURCES_M:.c=.o)
 

@@ -2,8 +2,8 @@
 
 struct drawer_info
 {
-    void *field;
-    void *shared_memory;
+    const void *field;
+    const void *shared_memory;
     size_t player_count;
     size_t team_count;
     int mouse_x;
@@ -126,15 +126,15 @@ static void mouse(mouse_key_t button, action_t action, modifier_key_t mods, void
     update_semaphore(0, 1); // exit smph
 }
 
-int display_shared_memory(void *shared_memory)
+int display_shared_memory(const void *shared_memory)
 {
     mlx_t *mlx = mlx_init(1024, 1000, "lem-ipc", true);
     if (!mlx)
-        exit_error("Could not open the window");
+        exit_error("Could not open the window", CLEANUP);
 
     mlx_image_t *img1 = mlx_new_image(mlx, 1024, 1000);
     if (mlx_image_to_window(mlx, img1, 0, 0) < 0)
-        exit_error("Could not display the image");
+        exit_error("Could not display the image", CLEANUP);
 
     struct drawer_info info;
     info.mlx = mlx;

@@ -1,8 +1,32 @@
-// int value = semctl(state.semaphores, 0, GETVAL);
-//     if (value == -1)
-//         exit_with_error("Could not get semaphore value");
+#include "../includes/lem_ipc.h"
 
-//     printf("Value: %d\n", value);
+int init_message_queue(const char team)
+{
+    key_t key = ftok("Makefile", team);
+    if (key == -1)
+        exit_error("Message queue key", CLEANUP);
+
+    int message_queue_id = msgget(IPC_PRIVATE, IPC_CREAT | IPC_EXCL | 0666);
+    if (message_queue_id == -1 && errno == EEXIST)
+        message_queue_id = msgget(IPC_PRIVATE, IPC_CREAT | 0666);
+    if (message_queue_id == -1)
+        exit_error("Message queue create", CLEANUP);
+
+    return message_queue_id;
+}
+
+// void enqueue(const char *message, const size_t len)
+// {
+//     // t_msg
+//     if (msgsnd(state.message_queue_id, (void *)message, len, 0) == -1) // IPC_NOWAIT - non-blocking
+//         perror("Enqueue message queue");
+// }
+
+// void dequeue()
+// {
+//     if (msgrcv(state.message_queue_id, (void *)b, 32, 0, 0) == -1)
+//         perror("Dequeue message queue");
+// }
 
 // t_msg *a = malloc(sizeof(t_msg));
 // a->mtype = 1;
@@ -14,14 +38,6 @@
 // b->mtype = 1;
 // b->mtext[0] = 'C';
 // b->mtext[1] = '\0';
-// int message_queue_id = msgget(IPC_PRIVATE, IPC_CREAT | 0666);
-// if (message_queue_id == -1)
-//     exit_with_error("Could not create message queue");
-
-// if (msgsnd(message_queue_id, (void *)a, 32, IPC_NOWAIT) == -1)
-//     exit_with_error("Could not send message queue");
-
-// printf("b before: %s\n", b->mtext);
 
 // if (msgrcv(message_queue_id, (void *)b, 32, 0, IPC_NOWAIT) == -1)
 //     exit_with_error("Could not receiver message from the queue");

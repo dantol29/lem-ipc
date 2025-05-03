@@ -1,7 +1,10 @@
 #include "../includes/lem_ipc.h"
 
-_Noreturn void exit_error(const char *message)
+_Noreturn void exit_error(const char *message, const int cleanup)
 {
+    if (cleanup == CLEANUP)
+        cleanup_resources();
+
     perror(message);
     exit(1);
 }

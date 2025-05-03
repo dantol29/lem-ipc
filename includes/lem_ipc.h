@@ -20,6 +20,21 @@
 #define FIELD_SIZE FIELD_WIDTH *FIELD_HEIGHT
 #define WALL 100
 
+enum exit_modes
+{
+    DEFAULT,
+    CLEANUP
+};
+
+typedef struct s_field
+{
+    const void *field;
+    char team;
+    int player_x;
+    int player_y;
+    int player_pos;
+} t_field;
+
 typedef struct s_node
 {
     short x;
@@ -39,19 +54,21 @@ typedef struct s_msg
 typedef struct s_state
 {
     int shared_memory_id;
+    int message_queue_id;
     int semaphores_id;
 } t_state;
 
 extern t_state state;
 
 int init_semaphore();
+int init_message_queue(const char team);
 void update_semaphore(const unsigned short sem_num, const short value);
-void player_loop(void *shared_memory, char team, int player_pos);
-int place_player(char team, void *shared_memory);
-int display_shared_memory(void *shared_memory);
+void player_loop(const void *shared_memory, t_field *info);
+int place_player(const char team, const void *shared_memory);
+int display_shared_memory(const void *shared_memory);
 void cleanup_resources();
 char parse_argc(const int argc, char **argv);
-t_node *a_star(const void *field, int player_x, int player_y, int enemy_pos);
-_Noreturn void exit_error(const char *message);
+t_node *a_star(t_field *info, int enemy_pos);
+_Noreturn void exit_error(const char *message, const int cleanup);
 
 #endif

@@ -139,7 +139,7 @@ static int calculate_moves(
     return 0;
 }
 
-t_node *a_star(const void *field, int player_x, int player_y, int enemy_pos)
+t_node *a_star(t_field *info, int enemy_pos)
 {
     const int enemy_y = enemy_pos / FIELD_WIDTH;
     const int enemy_x = enemy_pos - enemy_y * FIELD_WIDTH;
@@ -151,8 +151,8 @@ t_node *a_star(const void *field, int player_x, int player_y, int enemy_pos)
 
     open_list->next = NULL;
     open_list->parent = NULL;
-    open_list->x = player_x;
-    open_list->y = player_y;
+    open_list->x = info->player_x;
+    open_list->y = info->player_y;
     open_list->f = 0;
     open_list->g = 0;
 
@@ -162,7 +162,7 @@ t_node *a_star(const void *field, int player_x, int player_y, int enemy_pos)
         if (!q)
             return NULL;
 
-        if (calculate_moves(field, &open_list, &closed_list, q, enemy_x, enemy_y))
+        if (calculate_moves(info->field, &open_list, &closed_list, q, enemy_x, enemy_y))
         {
             while (q->parent && q->parent->parent) // find second node
                 q = q->parent;

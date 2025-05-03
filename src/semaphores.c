@@ -4,13 +4,13 @@ int init_semaphore()
 {
     key_t key = ftok("Makefile", 's');
     if (key == -1)
-        return -1;
+        exit_error("Semaphore key", CLEANUP);
 
     int semaphores = semget(key, 1, IPC_CREAT | IPC_EXCL | 0666);
     if (semaphores == -1 && errno == EEXIST)
         semaphores = semget(key, 1, IPC_CREAT | 0666);
     if (semaphores == -1)
-        return -1;
+        exit_error("Semaphore create", CLEANUP);
 
     if (errno != EEXIST)
     {
@@ -18,7 +18,7 @@ int init_semaphore()
         arg.val = 1;
 
         if (semctl(semaphores, 0, SETVAL, arg) == -1)
-            return -1;
+            exit_error("Semaphore set", CLEANUP);
     }
 
     return semaphores;
@@ -35,5 +35,5 @@ void update_semaphore(const unsigned short sem_num, const short value)
     s.sem_flg = 0; // IPC_NOWAIT - do not block
 
     if (semop(state.semaphores_id, &s, 1) == -1)
-        write(1, "Could not change semaphore value", 36);
+        write(1, "Could not change semaphore value\n", 34);
 }
