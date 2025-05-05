@@ -2,15 +2,22 @@
 
 static inline int is_enemy(const char pos, const char team)
 {
-    return pos != team && pos != WALL && pos != 0;
+    return pos != WALL && pos != 0 && (pos < team * team || pos > team * team + TEAM_SIZE - 1);
+}
+
+static void clean_player_data(const void *shared_memory, t_field *info)
+{
+    *(size_t *)shared_memory -= 1;
+    *((char *)info->field + info->player_pos) = 0;
+    update_semaphore(0, 1); // exit smph
 }
 
 // Manhattan Distance
-static int get_closest_enemy(t_field *info)
+static int get_closest_enemy(const t_field *info)
 {
     int32_t enemy_distance = INT32_MAX;
     int32_t distance;
-    int enemy_pos = -1;
+    int enemy_pos = NOT_FOUND;
     int enemy_x;
     int enemy_y;
     int i = 0;
@@ -24,7 +31,7 @@ static int get_closest_enemy(t_field *info)
 
             distance = abs(info->player_x - enemy_x) + abs(info->player_y - enemy_y);
             if (distance == 1)
-                return -1; // enemy is already close
+                return ENEMY_CLOSE; // enemy is already close
 
             if (distance < enemy_distance)
             {
@@ -38,7 +45,7 @@ static int get_closest_enemy(t_field *info)
     return enemy_pos;
 }
 
-static int is_surrounded(t_field *info)
+static int is_surrounded(const t_field *info)
 {
     const void *player = (char *)info->field + info->player_pos;
     int count = 0;
@@ -70,18 +77,15 @@ static int is_surrounded(t_field *info)
     return count > 1 ? 1 : 0;
 }
 
-static int update_position(t_field *info, int enemy_pos)
+static void update_position(t_field *info, const int enemy_pos)
 {
     t_node *node = a_star(info, enemy_pos);
     if (node)
     {
         *((char *)info->field + info->player_pos) = 0;
-        *((char *)info->field + node->y * FIELD_WIDTH + node->x) = info->team;
-
+        *((char *)info->field + node->y * FIELD_WIDTH + node->x) = info->player_id;
         info->player_pos = node->y * FIELD_WIDTH + node->x;
     }
-
-    return info->player_pos;
 }
 
 int place_player(const char team, const void *shared_memory)
@@ -116,8 +120,8 @@ int place_player(const char team, const void *shared_memory)
     {
         if (*((char *)field + positions[i]) == 0)
         {
-            *((char *)field + positions[i]) = team;
-            *(size_t *)shared_memory += 1; // player_count
+            *((char *)field + positions[i]) = i + team * team; // player_id
+            *(size_t *)shared_memory += 1;                     // player_count
 
             if (i == 0)
                 *((size_t *)shared_memory + 1) += 1; // team_count
@@ -135,36 +139,45 @@ int place_player(const char team, const void *shared_memory)
 
 void player_loop(const void *shared_memory, t_field *info)
 {
+    t_msg msg;
+    int enemy_pos;
+    size_t *team_count = (size_t *)shared_memory + 1;
+
     while (1)
     {
-        info->player_y = info->player_pos / FIELD_WIDTH;
-        info->player_x = info->player_pos - info->player_y * FIELD_WIDTH;
-
         update_semaphore(0, -1); // enter smph
 
-        if (*((size_t *)shared_memory + 1) > 1)
+        if (*team_count > 3)
         {
-            if (is_surrounded(info))
-            {
-                *(size_t *)shared_memory -= 1;
-                *((char *)info->field + info->player_pos) = 0;
-                update_semaphore(0, 1); // exit smph
-                return;
-            }
+            info->player_y = info->player_pos / FIELD_WIDTH;
+            info->player_x = info->player_pos - info->player_y * FIELD_WIDTH;
 
-            // check if someone needs help surrounding enemy
-            // int enemy_pos = 0;
-            // if (1)
-            //     info->player_pos = update_position(&info, enemy_pos);
-            // else
-            // {
-            int enemy_pos = get_closest_enemy(info);
-            if (enemy_pos != -1)
-                info->player_pos = update_position(info, enemy_pos);
-            // }
+            if (is_surrounded(info))
+                return clean_player_data(shared_memory, info);
+
+            int status = dequeue(&msg); // mates need help surrounding the enemy
+            if (status)
+            {
+                enemy_pos = get_player_pos(info, msg.enemy_id);
+                if (enemy_pos != -1)
+                    update_position(info, enemy_pos);
+            }
+            else
+            {
+                enemy_pos = get_closest_enemy(info);
+                if (enemy_pos == NOT_FOUND)
+                    return clean_player_data(shared_memory, info);
+
+                if (enemy_pos != ENEMY_CLOSE)
+                {
+                    update_position(info, enemy_pos);
+                    if (info->player_id > info->team * info->team)   // more than 1 player on the team
+                        enqueue(*((char *)info->field + enemy_pos)); // pass enemy_id
+                }
+            }
         }
 
         update_semaphore(0, 1); // exit smph
-        usleep(300000);
+        usleep(PLAYER_DELAY);
     }
 }

@@ -6,43 +6,35 @@ int init_message_queue(const char team)
     if (key == -1)
         exit_error("Message queue key", CLEANUP);
 
-    int message_queue_id = msgget(IPC_PRIVATE, IPC_CREAT | IPC_EXCL | 0666);
+    int message_queue_id = msgget(key, IPC_CREAT | IPC_EXCL | 0666);
     if (message_queue_id == -1 && errno == EEXIST)
-        message_queue_id = msgget(IPC_PRIVATE, IPC_CREAT | 0666);
+        message_queue_id = msgget(key, IPC_CREAT | 0666);
     if (message_queue_id == -1)
         exit_error("Message queue create", CLEANUP);
 
     return message_queue_id;
 }
 
-// void enqueue(const char *message, const size_t len)
-// {
-//     // t_msg
-//     if (msgsnd(state.message_queue_id, (void *)message, len, 0) == -1) // IPC_NOWAIT - non-blocking
-//         perror("Enqueue message queue");
-// }
+void enqueue(const int enemy_id)
+{
+    t_msg msg;
+    msg.type = 1;
+    msg.enemy_id = enemy_id;
 
-// void dequeue()
-// {
-//     if (msgrcv(state.message_queue_id, (void *)b, 32, 0, 0) == -1)
-//         perror("Dequeue message queue");
-// }
+    if (msgsnd(state.message_queue_id, (void *)&msg, sizeof(msg.enemy_id), IPC_NOWAIT) == -1) // IPC_NOWAIT - non-blocking
+        perror("Enqueue message queue");
+}
 
-// t_msg *a = malloc(sizeof(t_msg));
-// a->mtype = 1;
-// a->mtext[0] = 'A';
-// a->mtext[1] = 'B';
-// a->mtext[2] = '\0';
+int dequeue(t_msg *msg)
+{
+    if (msgrcv(state.message_queue_id, (void *)msg, sizeof(msg->enemy_id), 0, IPC_NOWAIT) == -1)
+    {
+        if (errno == ENOMSG)
+            return 0;
 
-// t_msg *b = malloc(sizeof(t_msg));
-// b->mtype = 1;
-// b->mtext[0] = 'C';
-// b->mtext[1] = '\0';
+        perror("Dequeue message queue");
+        return -1;
+    }
 
-// if (msgrcv(message_queue_id, (void *)b, 32, 0, IPC_NOWAIT) == -1)
-//     exit_with_error("Could not receiver message from the queue");
-
-// printf("b after: %s\n", b->mtext);
-
-// if (msgctl(message_queue_id, IPC_RMID, 0) == -1)
-//     exit_with_error("Could not delete message queue");
+    return 1;
+}

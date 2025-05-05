@@ -42,6 +42,7 @@ int main(int argc, char **argv)
         info.field = (size_t *)shared_memory + 2;
         info.team = team;
         info.player_pos = player_pos;
+        info.player_id = *((char *)info.field + info.player_pos);
 
         player_loop(shared_memory, &info);
     }
@@ -51,3 +52,4 @@ int main(int argc, char **argv)
 
     return 0;
 }
+

@@ -12,6 +12,10 @@ _Noreturn void exit_error(const char *message, const int cleanup)
 void cleanup_resources()
 {
     write(1, "Cleaning resources...\n", 23);
+
+    if (msgctl(state.message_queue_id, IPC_RMID, 0) == -1)
+        perror("Could not delete message queue");
+
     if (shmctl(state.shared_memory_id, IPC_RMID, 0) == -1)
         perror("Could not delete shared memory");
 
@@ -31,4 +35,18 @@ char parse_argc(const int argc, char **argv)
         exit(1);
     };
     return team;
+}
+
+int get_player_pos(const t_field *info, const char player_id)
+{
+    int i = 0;
+
+    while (i < FIELD_WIDTH * FIELD_HEIGHT)
+    {
+        if (*((char *)info->field + i) == player_id)
+            return i;
+        ++i;
+    }
+
+    return -1;
 }
