@@ -39,17 +39,16 @@ int main(int argc, char **argv)
     if (player_pos != -1)
     {
         t_field info;
-        info.field = (size_t *)shared_memory + 2;
+        info.field = (size_t *)shared_memory + 3;
         info.team = team;
         info.player_pos = player_pos;
         info.player_id = *((char *)info.field + info.player_pos);
 
         player_loop(shared_memory, &info);
     }
-
+    // TODO: clean queues for each team
     if (*(size_t *)shared_memory == 0) // no players left
         cleanup_resources();
 
     return 0;
 }
-

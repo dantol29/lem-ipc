@@ -128,6 +128,17 @@ static void mouse_hook(mouse_key_t button, action_t action, modifier_key_t mods,
             mlx_terminate(info->mlx);
             exit_error("User clicked on exit", CLEANUP);
         }
+        else if (x == 30 && y == 3)
+        {
+            update_semaphore(0, -1); // enter smph
+
+            if (*((size_t *)info->shared_memory + 2) == 1)
+                *((size_t *)info->shared_memory + 2) = 0;
+            else
+                *((size_t *)info->shared_memory + 2) = 1;
+
+            update_semaphore(0, 1); // exit smp
+        }
         return;
     }
 
@@ -160,6 +171,17 @@ static mlx_image_t *init_images(mlx_t *mlx, struct drawer_info *info)
         exit_mlx(mlx);
 
     if (mlx_image_to_window(mlx, img2, FIELD_WIDTH * 32 + 35, 10) < 0)
+        exit_mlx(mlx);
+
+    mlx_texture_t *start = mlx_load_png("textures/play.png");
+    if (!start)
+        exit_mlx(mlx);
+
+    mlx_image_t *img3 = mlx_texture_to_image(mlx, start);
+    if (!img)
+        exit_mlx(mlx);
+
+    if (mlx_image_to_window(mlx, img3, FIELD_WIDTH * 32 + 30, 90) < 0)
         exit_mlx(mlx);
 
     mlx_texture_t *cursor = mlx_load_png("textures/hammer.png");
@@ -196,7 +218,7 @@ int display_shared_memory(const void *shared_memory)
     info.shared_memory = shared_memory;
     info.player_count = *(size_t *)shared_memory;
     info.team_count = *((size_t *)shared_memory + 1);
-    info.field = (size_t *)shared_memory + 2; // skip player and team count
+    info.field = (size_t *)shared_memory + 3; // skip player, team count and is_started
 
     mlx_image_t *img = init_images(mlx, &info);
 

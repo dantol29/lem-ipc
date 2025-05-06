@@ -29,3 +29,5 @@ Each player is a separate process, and all processes interact through shared mem
 ## TODO:
 
 1. do a star for each enemy
+2. clean queues for each team
+3. fix player ids

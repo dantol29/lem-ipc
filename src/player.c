@@ -90,7 +90,7 @@ static void update_position(t_field *info, const int enemy_pos)
 
 int place_player(const char team, const void *shared_memory)
 {
-    void *field = (size_t *)shared_memory + 2;
+    void *field = (size_t *)shared_memory + 3;
 
     const int team1_positions[] = {0, 2, FIELD_WIDTH * 2, FIELD_WIDTH * 2 + 2};
     const int team2_positions[] = {FIELD_WIDTH - 3, FIELD_WIDTH - 1, FIELD_WIDTH * 2 - 3, FIELD_WIDTH * 2 - 1};
@@ -141,13 +141,14 @@ void player_loop(const void *shared_memory, t_field *info)
 {
     t_msg msg;
     int enemy_pos;
-    size_t *team_count = (size_t *)shared_memory + 1;
+    size_t *is_started = (size_t *)shared_memory + 2;
 
+    printf("id: %d\n", info->player_id);
     while (1)
     {
         update_semaphore(0, -1); // enter smph
 
-        if (*team_count > 3)
+        if (*is_started)
         {
             info->player_y = info->player_pos / FIELD_WIDTH;
             info->player_x = info->player_pos - info->player_y * FIELD_WIDTH;
