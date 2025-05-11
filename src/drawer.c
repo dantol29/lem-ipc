@@ -4,6 +4,7 @@ struct drawer_info
 {
     const void *field;
     const void *shared_memory;
+    const t_state *state;
     size_t player_count;
     size_t team_count;
     int mouse_x;
@@ -20,22 +21,22 @@ static inline uint32_t get_color(const int id)
         return 0xEADDCAFF;
     if (id == 0)
         return 0x000000FF;
-    if (id < 4) // 1st team: 0-3
+    if (id < 8) // 1st team: 4-7
         return 0xE63946FF;
-    if (id < 8) // 2nd team: 4-7
+    if (id < 13) // 2nd team: 9-12
         return 0x1D3557FF;
-    if (id < 13) // 3rd team: 9-12
+    if (id < 20) // 3rd team: 16-19
         return 0x2A9D8FFF;
-    if (id < 20) // 4th team: 16-19
+    if (id < 29) // 4th team: 25-28
         return 0xF4A261FF;
 
     return 0x000000FF;
 }
 
-static inline void exit_mlx(mlx_t *mlx)
+static inline void exit_mlx(mlx_t *mlx, const t_state *state)
 {
     mlx_terminate(mlx);
-    cleanup_resources();
+    cleanup_resources(state);
 }
 
 static void draw_tile(const struct drawer_info *info, const int x, const int y, const uint32_t color)
@@ -126,23 +127,23 @@ static void mouse_hook(mouse_key_t button, action_t action, modifier_key_t mods,
         if (x == 30 && y == 1)
         {
             mlx_terminate(info->mlx);
-            exit_error("User clicked on exit", CLEANUP);
+            exit_error(info->state, "User clicked on exit", CLEANUP);
         }
         else if (x == 30 && y == 3)
         {
-            update_semaphore(0, -1); // enter smph
+            update_semaphore(0, -1, info->state->semaphores_id); // enter smph
 
             if (*((size_t *)info->shared_memory + 2) == 1)
                 *((size_t *)info->shared_memory + 2) = 0;
             else
                 *((size_t *)info->shared_memory + 2) = 1;
 
-            update_semaphore(0, 1); // exit smp
+            update_semaphore(0, 1, info->state->semaphores_id); // exit smp
         }
         return;
     }
 
-    update_semaphore(0, -1); // enter smph
+    update_semaphore(0, -1, info->state->semaphores_id); // enter smph
 
     char *value = (char *)info->field + y * FIELD_WIDTH + x;
     if (*value == WALL)
@@ -150,43 +151,43 @@ static void mouse_hook(mouse_key_t button, action_t action, modifier_key_t mods,
     else if (*value == 0)
         *value = WALL;
 
-    update_semaphore(0, 1); // exit smph
+    update_semaphore(0, 1, info->state->semaphores_id); // exit smph
 }
 
 static mlx_image_t *init_images(mlx_t *mlx, struct drawer_info *info)
 {
     mlx_image_t *img = mlx_new_image(mlx, 1024, 1000);
     if (!img)
-        exit_mlx(mlx);
+        exit_mlx(mlx, info->state);
 
     if (mlx_image_to_window(mlx, img, 0, 0) < 0)
-        exit_mlx(mlx);
+        exit_mlx(mlx, info->state);
 
     mlx_texture_t *exit = mlx_load_png("textures/exit.png");
     if (!exit)
-        exit_mlx(mlx);
+        exit_mlx(mlx, info->state);
 
     mlx_image_t *img2 = mlx_texture_to_image(mlx, exit);
     if (!img)
-        exit_mlx(mlx);
+        exit_mlx(mlx, info->state);
 
     if (mlx_image_to_window(mlx, img2, FIELD_WIDTH * 32 + 35, 10) < 0)
-        exit_mlx(mlx);
+        exit_mlx(mlx, info->state);
 
     mlx_texture_t *start = mlx_load_png("textures/play.png");
     if (!start)
-        exit_mlx(mlx);
+        exit_mlx(mlx, info->state);
 
     mlx_image_t *img3 = mlx_texture_to_image(mlx, start);
     if (!img)
-        exit_mlx(mlx);
+        exit_mlx(mlx, info->state);
 
     if (mlx_image_to_window(mlx, img3, FIELD_WIDTH * 32 + 30, 90) < 0)
-        exit_mlx(mlx);
+        exit_mlx(mlx, info->state);
 
     mlx_texture_t *cursor = mlx_load_png("textures/hammer.png");
     if (!cursor)
-        exit_mlx(mlx);
+        exit_mlx(mlx, info->state);
 
     mlx_set_cursor(mlx, mlx_create_cursor(cursor));
 
@@ -195,26 +196,27 @@ static mlx_image_t *init_images(mlx_t *mlx, struct drawer_info *info)
 
     info->teams = mlx_put_string(info->mlx, buffer1, 12, 32 * FIELD_HEIGHT + 40);
     if (!info->teams)
-        exit_mlx(mlx);
+        exit_mlx(mlx, info->state);
 
     char buffer2[23];
     sprintf(buffer2, "Players: %ld", info->player_count);
 
     info->players = mlx_put_string(info->mlx, buffer2, 12, 32 * FIELD_HEIGHT + 10);
     if (!info->players)
-        exit_mlx(mlx);
+        exit_mlx(mlx, info->state);
 
     return img;
 }
 
-int display_shared_memory(const void *shared_memory)
+int display_shared_memory(const t_state *state, const void *shared_memory)
 {
     mlx_t *mlx = mlx_init(1024, 1000, "lem-ipc", true);
     if (!mlx)
-        exit_error("Could not open the window", CLEANUP);
+        exit_error(state, "Could not open the window", CLEANUP);
 
     struct drawer_info info;
     info.mlx = mlx;
+    info.state = state;
     info.shared_memory = shared_memory;
     info.player_count = *(size_t *)shared_memory;
     info.team_count = *((size_t *)shared_memory + 1);

@@ -139,7 +139,7 @@ static int calculate_moves(
     return 0;
 }
 
-t_node *a_star(t_field *info, int enemy_pos)
+t_node *a_star(const t_field *info, const int enemy_pos)
 {
     const int enemy_y = enemy_pos / FIELD_WIDTH;
     const int enemy_x = enemy_pos - enemy_y * FIELD_WIDTH;

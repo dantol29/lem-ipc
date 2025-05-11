@@ -1,25 +1,24 @@
 #include "../includes/lem_ipc.h"
 
-_Noreturn void exit_error(const char *message, const int cleanup)
+_Noreturn void exit_error(const t_state *state, const char *message, const int cleanup)
 {
     if (cleanup == CLEANUP)
-        cleanup_resources();
+        cleanup_resources(state);
 
     perror(message);
     exit(1);
 }
 
-void cleanup_resources()
+void cleanup_resources(const t_state *state)
 {
     write(1, "Cleaning resources...\n", 23);
 
-    if (msgctl(state.message_queue_id, IPC_RMID, 0) == -1)
-        perror("Could not delete message queue");
+    clean_all_msgq();
 
-    if (shmctl(state.shared_memory_id, IPC_RMID, 0) == -1)
+    if (shmctl(state->shared_memory_id, IPC_RMID, 0) == -1)
         perror("Could not delete shared memory");
 
-    if (semctl(state.semaphores_id, IPC_RMID, 0) == -1)
+    if (semctl(state->semaphores_id, IPC_RMID, 0) == -1)
         perror("Could not delete semaphores");
 }
 
@@ -29,7 +28,7 @@ char parse_argc(const int argc, char **argv)
         return '0'; // game drawer
 
     const int team = atoi(argv[1]);
-    if (team == 0 || team > 255)
+    if (team < 1 || team > 255)
     {
         write(1, "Incorrect team number\n", 23);
         exit(1);

@@ -5,11 +5,11 @@ static inline int is_enemy(const char pos, const char team)
     return pos != WALL && pos != 0 && (pos < team * team || pos > team * team + TEAM_SIZE - 1);
 }
 
-static void clean_player_data(const void *shared_memory, t_field *info)
+static void clean_player_data(const void *shared_memory, t_field *info, const t_state *state)
 {
     *(size_t *)shared_memory -= 1;
     *((char *)info->field + info->player_pos) = 0;
-    update_semaphore(0, 1); // exit smph
+    update_semaphore(0, 1, state->semaphores_id); // exit smph
 }
 
 // Manhattan Distance
@@ -88,7 +88,7 @@ static void update_position(t_field *info, const int enemy_pos)
     }
 }
 
-int place_player(const char team, const void *shared_memory)
+int place_player(const t_state *state, const char team, const void *shared_memory)
 {
     void *field = (size_t *)shared_memory + 3;
 
@@ -102,18 +102,18 @@ int place_player(const char team, const void *shared_memory)
     const int *positions = NULL;
     int position = -1;
 
-    if (team == 1)
+    if (team == 2)
         positions = team1_positions;
-    else if (team == 2)
-        positions = team2_positions;
     else if (team == 3)
-        positions = team3_positions;
+        positions = team2_positions;
     else if (team == 4)
+        positions = team3_positions;
+    else if (team == 5)
         positions = team4_positions;
     else
         return position;
 
-    update_semaphore(0, -1); // enter smph
+    update_semaphore(0, -1, state->semaphores_id); // enter smph
 
     int i = 0;
     while (i < TEAM_SIZE)
@@ -132,21 +132,20 @@ int place_player(const char team, const void *shared_memory)
         ++i;
     }
 
-    update_semaphore(0, 1); // exit smph
+    update_semaphore(0, 1, state->semaphores_id); // exit smph
 
     return position;
 }
 
-void player_loop(const void *shared_memory, t_field *info)
+void player_loop(const t_state *state, const void *shared_memory, t_field *info)
 {
     t_msg msg;
     int enemy_pos;
     size_t *is_started = (size_t *)shared_memory + 2;
 
-    printf("id: %d\n", info->player_id);
     while (1)
     {
-        update_semaphore(0, -1); // enter smph
+        update_semaphore(0, -1, state->semaphores_id); // enter smph
 
         if (*is_started)
         {
@@ -154,9 +153,9 @@ void player_loop(const void *shared_memory, t_field *info)
             info->player_x = info->player_pos - info->player_y * FIELD_WIDTH;
 
             if (is_surrounded(info))
-                return clean_player_data(shared_memory, info);
+                return clean_player_data(shared_memory, info, state);
 
-            int status = dequeue(&msg); // mates need help surrounding the enemy
+            int status = dequeue(&msg, state->message_queue_id); // mates need help surrounding the enemy
             if (status)
             {
                 enemy_pos = get_player_pos(info, msg.enemy_id);
@@ -166,19 +165,19 @@ void player_loop(const void *shared_memory, t_field *info)
             else
             {
                 enemy_pos = get_closest_enemy(info);
-                if (enemy_pos == NOT_FOUND)
-                    return clean_player_data(shared_memory, info);
+                if (enemy_pos == NOT_FOUND) // Congrats! You won!
+                    return clean_player_data(shared_memory, info, state);
 
                 if (enemy_pos != ENEMY_CLOSE)
                 {
                     update_position(info, enemy_pos);
-                    if (info->player_id > info->team * info->team)   // more than 1 player on the team
-                        enqueue(*((char *)info->field + enemy_pos)); // pass enemy_id
+                    if (info->player_id > info->team * info->team)                            // more than 1 player on the team
+                        enqueue(*((char *)info->field + enemy_pos), state->message_queue_id); // pass enemy_id
                 }
             }
         }
 
-        update_semaphore(0, 1); // exit smph
+        update_semaphore(0, 1, state->semaphores_id); // exit smph
         usleep(PLAYER_DELAY);
     }
 }

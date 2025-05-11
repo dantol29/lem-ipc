@@ -67,32 +67,30 @@ typedef struct s_state
     char team;
 } t_state;
 
-extern t_state state;
-
 // semaphore.c
-int init_semaphore();
-void update_semaphore(const unsigned short sem_num, const short value);
+int init_semaphore(const t_state *state);
+void update_semaphore(const unsigned short sem_num, const short value, const int sem_id);
 
 // queue.c
-int init_message_queue(const char team);
-void enqueue(const int enemy_id);
-int dequeue(t_msg *msg);
+int init_message_queue(const t_state *state, const char team);
+void clean_all_msgq();
+void enqueue(const int enemy_id, const int queue_id);
+int dequeue(const t_msg *msg, const int queue_id);
 
 // player.c
-void player_loop(const void *shared_memory, t_field *info);
-int place_player(const char team, const void *shared_memory);
+void player_loop(const t_state *state, const void *shared_memory, t_field *info);
+int place_player(const t_state *state, const char team, const void *shared_memory);
 
 // drawer.c
-int display_shared_memory(const void *shared_memory);
+int display_shared_memory(const t_state *state, const void *shared_memory);
 
 // a_star.c
-t_node *a_star(t_field *info, int enemy_pos);
+t_node *a_star(const t_field *info, const int enemy_pos);
 
 // utils.c
-void cleanup_resources();
+void cleanup_resources(const t_state *state);
 char parse_argc(const int argc, char **argv);
 int get_player_pos(const t_field *info, const char player_id);
-int move_from_enemy(int *player_x, int *player_y, const int enemy_pos);
-_Noreturn void exit_error(const char *message, const int cleanup);
+_Noreturn void exit_error(const t_state *state, const char *message, const int cleanup);
 
 #endif
