@@ -2,7 +2,7 @@
 
 _Noreturn void exit_error(const t_state *state, const char *message, const int cleanup)
 {
-    if (cleanup == CLEANUP)
+    if (cleanup == CLEANUP && state)
         cleanup_resources(state);
 
     perror(message);
@@ -22,11 +22,8 @@ void cleanup_resources(const t_state *state)
         perror("Could not delete semaphores");
 }
 
-char parse_argc(const int argc, char **argv)
+char parse_argv(char **argv)
 {
-    if (argc < 2)
-        return '0'; // game drawer
-
     const int team = atoi(argv[1]);
     if (team < 1 || team > 255)
     {

@@ -7,10 +7,12 @@ struct drawer_info
     const t_state *state;
     size_t player_count;
     size_t team_count;
+    size_t is_started;
     int mouse_x;
     int mouse_y;
     mlx_image_t *players;
     mlx_image_t *teams;
+    mlx_image_t *started;
     mlx_image_t *image;
     mlx_t *mlx;
 };
@@ -37,6 +39,32 @@ static inline void exit_mlx(mlx_t *mlx, const t_state *state)
 {
     mlx_terminate(mlx);
     cleanup_resources(state);
+}
+
+static void draw_image(struct drawer_info *info, const char *path, const int x, const int y)
+{
+    mlx_texture_t *exit = mlx_load_png(path);
+    if (!exit)
+        exit_mlx(info->mlx, info->state);
+
+    mlx_image_t *img = mlx_texture_to_image(info->mlx, exit);
+    if (!img)
+        exit_mlx(info->mlx, info->state);
+
+    if (mlx_image_to_window(info->mlx, img, x, y) < 0)
+        exit_mlx(info->mlx, info->state);
+}
+
+static mlx_image_t *draw_string(struct drawer_info *info, const char *string, size_t number, const int x, const int y)
+{
+    char buffer1[strlen(string) + 1 + 4];
+    sprintf(buffer1, "%s: %ld", string, number);
+
+    mlx_image_t *image = mlx_put_string(info->mlx, buffer1, x, y);
+    if (!image)
+        exit_mlx(info->mlx, info->state);
+
+    return image;
 }
 
 static void draw_tile(const struct drawer_info *info, const int x, const int y, const uint32_t color)
@@ -82,24 +110,23 @@ static void game_hook(void *param)
 
     if (*(size_t *)info->shared_memory != info->player_count)
     {
+        mlx_delete_image(info->mlx, info->players);
         info->player_count = *(size_t *)info->shared_memory;
-        char buffer[23];
-        sprintf(buffer, "Players: %ld", info->player_count);
-
-        if (info->players)
-            mlx_delete_image(info->mlx, info->players);
-        info->players = mlx_put_string(info->mlx, buffer, 12, 32 * FIELD_HEIGHT + 10);
+        info->players = draw_string(info, "Players", info->player_count, 12, 32 * FIELD_HEIGHT + 10);
     }
 
     if (*((size_t *)info->shared_memory + 1) != info->team_count)
     {
+        mlx_delete_image(info->mlx, info->teams);
         info->team_count = *((size_t *)info->shared_memory + 1);
-        char buffer[23];
-        sprintf(buffer, "Teams: %ld", info->team_count);
+        info->teams = draw_string(info, "Teams", info->team_count, 12, 32 * FIELD_HEIGHT + 40);
+    }
 
-        if (info->teams)
-            mlx_delete_image(info->mlx, info->teams);
-        info->teams = mlx_put_string(info->mlx, buffer, 12, 32 * FIELD_HEIGHT + 40);
+    if (*((size_t *)info->shared_memory + 2) != info->is_started)
+    {
+        mlx_delete_image(info->mlx, info->started);
+        info->is_started = *((size_t *)info->shared_memory + 2);
+        info->started = draw_string(info, "Started", info->is_started, 12, 32 * FIELD_HEIGHT + 70);
     }
 }
 
@@ -124,12 +151,12 @@ static void mouse_hook(mouse_key_t button, action_t action, modifier_key_t mods,
 
     if (x >= FIELD_WIDTH || y >= FIELD_HEIGHT)
     {
-        if (x == 30 && y == 1)
+        if (x == 30 && y == 1) // EXIT
         {
             mlx_terminate(info->mlx);
             exit_error(info->state, "User clicked on exit", CLEANUP);
         }
-        else if (x == 30 && y == 3)
+        else if (x == 30 && y == 3) // START
         {
             update_semaphore(0, -1, info->state->semaphores_id); // enter smph
 
@@ -154,56 +181,27 @@ static void mouse_hook(mouse_key_t button, action_t action, modifier_key_t mods,
     update_semaphore(0, 1, info->state->semaphores_id); // exit smph
 }
 
-static mlx_image_t *init_images(mlx_t *mlx, struct drawer_info *info)
+static mlx_image_t *init_images(struct drawer_info *info)
 {
-    mlx_image_t *img = mlx_new_image(mlx, 1024, 1000);
+    mlx_image_t *img = mlx_new_image(info->mlx, 1024, 1000);
     if (!img)
-        exit_mlx(mlx, info->state);
+        exit_mlx(info->mlx, info->state);
 
-    if (mlx_image_to_window(mlx, img, 0, 0) < 0)
-        exit_mlx(mlx, info->state);
-
-    mlx_texture_t *exit = mlx_load_png("textures/exit.png");
-    if (!exit)
-        exit_mlx(mlx, info->state);
-
-    mlx_image_t *img2 = mlx_texture_to_image(mlx, exit);
-    if (!img)
-        exit_mlx(mlx, info->state);
-
-    if (mlx_image_to_window(mlx, img2, FIELD_WIDTH * 32 + 35, 10) < 0)
-        exit_mlx(mlx, info->state);
-
-    mlx_texture_t *start = mlx_load_png("textures/play.png");
-    if (!start)
-        exit_mlx(mlx, info->state);
-
-    mlx_image_t *img3 = mlx_texture_to_image(mlx, start);
-    if (!img)
-        exit_mlx(mlx, info->state);
-
-    if (mlx_image_to_window(mlx, img3, FIELD_WIDTH * 32 + 30, 90) < 0)
-        exit_mlx(mlx, info->state);
+    if (mlx_image_to_window(info->mlx, img, 0, 0) < 0)
+        exit_mlx(info->mlx, info->state);
 
     mlx_texture_t *cursor = mlx_load_png("textures/hammer.png");
     if (!cursor)
-        exit_mlx(mlx, info->state);
+        exit_mlx(info->mlx, info->state);
 
-    mlx_set_cursor(mlx, mlx_create_cursor(cursor));
+    mlx_set_cursor(info->mlx, mlx_create_cursor(cursor));
 
-    char buffer1[23];
-    sprintf(buffer1, "Teams: %ld", info->team_count);
+    draw_image(info, "textures/exit.png", FIELD_WIDTH * 32 + 35, 10);
+    draw_image(info, "textures/play.png", FIELD_WIDTH * 32 + 30, 90);
 
-    info->teams = mlx_put_string(info->mlx, buffer1, 12, 32 * FIELD_HEIGHT + 40);
-    if (!info->teams)
-        exit_mlx(mlx, info->state);
-
-    char buffer2[23];
-    sprintf(buffer2, "Players: %ld", info->player_count);
-
-    info->players = mlx_put_string(info->mlx, buffer2, 12, 32 * FIELD_HEIGHT + 10);
-    if (!info->players)
-        exit_mlx(mlx, info->state);
+    info->players = draw_string(info, "Players", info->player_count, 12, 32 * FIELD_HEIGHT + 10);
+    info->teams = draw_string(info, "Teams", info->team_count, 12, 32 * FIELD_HEIGHT + 40);
+    info->started = draw_string(info, "Started", info->is_started, 12, 32 * FIELD_HEIGHT + 70);
 
     return img;
 }
@@ -220,9 +218,10 @@ int display_shared_memory(const t_state *state, const void *shared_memory)
     info.shared_memory = shared_memory;
     info.player_count = *(size_t *)shared_memory;
     info.team_count = *((size_t *)shared_memory + 1);
+    info.is_started = *((size_t *)shared_memory + 2);
     info.field = (size_t *)shared_memory + 3; // skip player, team count and is_started
 
-    mlx_image_t *img = init_images(mlx, &info);
+    mlx_image_t *img = init_images(&info);
 
     info.image = img;
 

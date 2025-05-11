@@ -89,7 +89,7 @@ t_node *a_star(const t_field *info, const int enemy_pos);
 
 // utils.c
 void cleanup_resources(const t_state *state);
-char parse_argc(const int argc, char **argv);
+char parse_argv(char **argv);
 int get_player_pos(const t_field *info, const char player_id);
 _Noreturn void exit_error(const t_state *state, const char *message, const int cleanup);
 

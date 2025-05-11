@@ -26,8 +26,10 @@ int main(int argc, char **argv)
 {
     t_state state;
 
-    const char team = parse_argc(argc, argv);
+    if (argc != 2)
+        exit_error(&state, "Invalid args", DEFAULT);
 
+    const char team = parse_argv(argv);
     void *shared_memory = init_shared_memory(&state);
     state.semaphores_id = init_semaphore(&state);
     state.message_queue_id = init_message_queue(&state, team);
