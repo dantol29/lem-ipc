@@ -1,6 +1,6 @@
 # IPC Battle Arena - System V Multiplayer Game
 
-![video](video.mov)
+![video](https://github.com/dantol29/lem-ipc/blob/main/video.mov)
 
 ## Overview
 
