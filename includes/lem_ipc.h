@@ -16,6 +16,7 @@
 #define FIELD_WIDTH 28
 #define FIELD_HEIGHT 20
 #define TEAM_SIZE 4
+#define TEAM_COUNT 4
 #define QUEUE_KEY 29
 #define FIELD_SIZE FIELD_WIDTH *FIELD_HEIGHT
 #define WALL 100

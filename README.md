@@ -1,8 +1,10 @@
 # IPC Battle Arena - System V Multiplayer Game
 
+![video](video.mov)
+
 ## Overview
 
-IPC Battle Arena is a multiplayer terminal-based strategy game where players, grouped into teams, battle to be the last team standing on a 2D board. The game is a demonstration of System V IPC mechanisms including shared memory, message queues, and semaphores.
+IPC Battle Arena is a multiplayer terminal-based strategy game where players, grouped into teams, battle to be the last team standing on a 2D board. The game is a demonstration of System V IPC mechanisms - shared memory, message queues, and semaphores.
 
 Each player is a separate process, and all processes interact through shared memory and message queues, ensuring synchronized access using semaphores.
 
@@ -19,7 +21,7 @@ Each player is a separate process, and all processes interact through shared mem
    Prevent concurrent access to shared memory, ensuring atomic updates and reads.
 
 3. Message Queues (MSGQ)
-   Used for communication between players (e.g., coordination, movement commands).
+   Used for communication between players (coordinated attacks).
 
 ## Commands
 

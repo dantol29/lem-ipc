@@ -5,6 +5,19 @@ static inline int is_enemy(const char pos, const char team)
     return pos != WALL && pos != 0 && (pos < team * team || pos > team * team + TEAM_SIZE - 1);
 }
 
+static inline int get_enemy_team(const char enemy)
+{
+    int i = 2;
+    while (i < enemy)
+    {
+        if (i * i > enemy)
+            return i - 1;
+        ++i;
+    }
+
+    return INT16_MAX;
+}
+
 static void clean_player_data(const void *shared_memory, t_field *info, const t_state *state)
 {
     *(size_t *)shared_memory -= 1;
@@ -48,33 +61,41 @@ static int get_closest_enemy(const t_field *info)
 static int is_surrounded(const t_field *info)
 {
     const void *player = (char *)info->field + info->player_pos;
-    int count = 0;
+    int enemies[TEAM_COUNT + 2] = {0, 0, 0, 0, 0, 0};
 
     if (info->player_x > 0 && is_enemy(*((char *)player - 1), info->team))
-        ++count; // left
+        enemies[get_enemy_team(*((char *)player - 1))] += 1; // left
 
     if (info->player_x < FIELD_WIDTH - 1 && is_enemy(*((char *)player + 1), info->team))
-        ++count; // right
+        enemies[get_enemy_team(*((char *)player + 1))] += 1; // right
 
     if (info->player_y > 0 && is_enemy(*((char *)player - FIELD_WIDTH), info->team))
-        ++count; // up
+        enemies[get_enemy_team(*((char *)player - FIELD_WIDTH))] += 1; // up
 
     if (info->player_y < FIELD_HEIGHT - 1 && is_enemy(*((char *)player + FIELD_WIDTH), info->team))
-        ++count; // down
+        enemies[get_enemy_team(*((char *)player + FIELD_WIDTH))] += 1; // down
 
     if (info->player_x > 0 && info->player_y > 0 && is_enemy(*((char *)player - FIELD_WIDTH - 1), info->team))
-        ++count; // diagonal upper-left
+        enemies[get_enemy_team(*((char *)player - FIELD_WIDTH - 1))] += 1; // diagonal upper-left
 
     if (info->player_x > 0 && info->player_y < FIELD_HEIGHT - 1 && is_enemy(*((char *)player + FIELD_WIDTH - 1), info->team))
-        ++count; // diagonal lower-left
+        enemies[get_enemy_team(*((char *)player + FIELD_WIDTH - 1))] += 1; // diagonal lower-left
 
     if (info->player_x < FIELD_WIDTH - 1 && info->player_y > 0 && is_enemy(*((char *)player - FIELD_WIDTH + 1), info->team))
-        ++count; // diagonal upper-right
+        enemies[get_enemy_team(*((char *)player - FIELD_WIDTH + 1))] += 1; // diagonal upper-right
 
     if (info->player_x < FIELD_WIDTH - 1 && info->player_y < FIELD_HEIGHT - 1 && is_enemy(*((char *)player + FIELD_WIDTH + 1), info->team))
-        ++count; // diagonal lower-right
+        enemies[get_enemy_team(*((char *)player + 1 + FIELD_WIDTH))] += 1; // diagonal lower-right
 
-    return count > 1 ? 1 : 0;
+    int i = 2; // teams numbers start from 2
+    while (i < TEAM_COUNT + 2)
+    {
+        if (enemies[i] > 1)
+            return 1;
+        ++i;
+    }
+
+    return 0;
 }
 
 static void update_position(t_field *info, const int enemy_pos)
