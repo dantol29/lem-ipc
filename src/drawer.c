@@ -115,6 +115,9 @@ static void game_hook(void *param)
 
     register short j;
     register short i = 0;
+    
+    update_semaphore(0, -1, info->state->semaphores_id); // enter smph
+    
     while (i < FIELD_HEIGHT)
     {
         j = 0;
@@ -147,6 +150,8 @@ static void game_hook(void *param)
         info->is_started = *((size_t *)info->shared_memory + 2);
         info->started = draw_string(info, "Started", info->is_started, 12, 32 * FIELD_HEIGHT + 70);
     }
+
+    update_semaphore(0, 1, info->state->semaphores_id); // exit smp
 }
 
 static void cursor_hook(double xpos, double ypos, void *param)
@@ -233,6 +238,8 @@ int display_shared_memory(const t_state *state, const void *shared_memory)
     if (!mlx)
         exit_error(state, "Could not open the window", CLEANUP);
 
+    update_semaphore(0, -1, state->semaphores_id); // enter smph
+
     struct drawer_info info;
     info.mlx = mlx;
     info.state = state;
@@ -248,6 +255,8 @@ int display_shared_memory(const t_state *state, const void *shared_memory)
     info.play_button = NULL;
 
     mlx_image_t *img = init_images(&info);
+
+    update_semaphore(0, 1, state->semaphores_id); // exit smp
 
     info.image = img;
 

@@ -1,7 +1,7 @@
 NAME = ipc
 CC = gcc
 CFLAGS = -O0 -Wall -Wextra -Werror -ffast-math -I./include -I$(LIBMLX)/include
-FSANITIZE = -fsanitize=address
+FSANITIZE = -fsanitize=thread
 LIBMLX := lib_mlx42
 LIBS := $(LIBMLX)/build/libmlx42.a -ldl -L/opt/homebrew/lib -lglfw -pthread -lm 
 SOURCES_M := src/main.c src/semaphores.c src/queue.c src/utils.c src/drawer.c src/player.c src/a_star.c
@@ -18,7 +18,7 @@ clean:
 
 fclean: clean
 		$(RM) $(NAME) $(NAME)
-		@rm -rf lib_mlx42/build/
+		rm -rf lib_mlx42/
 
 re: fclean all
 
