@@ -100,12 +100,14 @@ static int is_surrounded(const t_field *info)
 
 static void update_position(t_field *info, const int enemy_pos)
 {
-    t_node *node = a_star(info, enemy_pos);
-    if (node)
+    short new_x = 0;
+    short new_y = 0;
+
+    if (a_star(info, enemy_pos, &new_x, &new_y))
     {
         *((char *)info->field + info->player_pos) = 0;
-        *((char *)info->field + node->y * FIELD_WIDTH + node->x) = info->player_id;
-        info->player_pos = node->y * FIELD_WIDTH + node->x;
+        *((char *)info->field + new_y * FIELD_WIDTH + new_x) = info->player_id;
+        info->player_pos = new_y * FIELD_WIDTH + new_x;
     }
 }
 

@@ -38,16 +38,20 @@ int main(int argc, char **argv)
         return display_shared_memory(&state, shared_memory); // drawer process
 
     int player_pos = place_player(&state, team, shared_memory);
-    if (player_pos == -1)
-        exit_error(&state, "Invalid player", DEFAULT);
+    if (player_pos != -1) 
+    {
+    	t_field info;
+    	info.field = (size_t *)shared_memory + 3;
+    	info.team = team;
+    	info.player_pos = player_pos;
+    	info.player_id = *((char *)info.field + info.player_pos);
 
-    t_field info;
-    info.field = (size_t *)shared_memory + 3;
-    info.team = team;
-    info.player_pos = player_pos;
-    info.player_id = *((char *)info.field + info.player_pos);
-
-    player_loop(&state, shared_memory, &info);
+    	player_loop(&state, shared_memory, &info);
+    } 
+    else 
+    {
+	    write(2, "No spaces left\n", 16);
+    }
 
     if (*(size_t *)shared_memory == 0) // no players left
         cleanup_resources(&state);

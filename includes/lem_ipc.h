@@ -86,7 +86,7 @@ int place_player(const t_state *state, const char team, const void *shared_memor
 int display_shared_memory(const t_state *state, const void *shared_memory);
 
 // a_star.c
-t_node *a_star(const t_field *info, const int enemy_pos);
+int a_star(const t_field *info, const int enemy_pos, short *new_x, short *new_y);
 
 // utils.c
 void cleanup_resources(const t_state *state);

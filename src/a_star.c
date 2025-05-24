@@ -1,22 +1,21 @@
 #include "../includes/lem_ipc.h"
 
-static void free_list(t_node *list, t_node *except)
+static void free_list(t_node **list)
 {
-    if (!list)
+    if (!list || !*list)
         return;
 
-    t_node *prev;
+    t_node *current = *list;
+    t_node *next;
 
-    while (list->next)
+    while (current)
     {
-        prev = list;
-        list = list->next;
-        if (prev != except)
-            free(prev);
+        next = current->next;
+        free(current);
+        current = next;
     }
 
-    if (list != except)
-        free(list);
+    *list = NULL;
 }
 
 static void add_node(t_node **list, t_node *new_node)
@@ -26,7 +25,7 @@ static void add_node(t_node **list, t_node *new_node)
 
     new_node->next = NULL;
 
-    if (*list == NULL) // list is empty
+    if (*list == NULL)
     {
         *list = new_node;
         return;
@@ -139,7 +138,7 @@ static int calculate_moves(
     return 0;
 }
 
-t_node *a_star(const t_field *info, const int enemy_pos)
+int a_star(const t_field *info, const int enemy_pos, short *new_x, short *new_y)
 {
     const int enemy_y = enemy_pos / FIELD_WIDTH;
     const int enemy_x = enemy_pos - enemy_y * FIELD_WIDTH;
@@ -147,7 +146,7 @@ t_node *a_star(const t_field *info, const int enemy_pos)
     t_node *closed_list = NULL;
     t_node *open_list = malloc(sizeof(t_node));
     if (!open_list)
-        return NULL;
+        return 0;
 
     open_list->next = NULL;
     open_list->parent = NULL;
@@ -159,21 +158,29 @@ t_node *a_star(const t_field *info, const int enemy_pos)
     while (1)
     {
         t_node *q = pop_node(&open_list);
-        if (!q)
-            return NULL;
+        if (!q) 
+	{
+	    free_list(&closed_list);
+            free_list(&open_list);
+            return 0;
+	}
 
         if (calculate_moves(info->field, &open_list, &closed_list, q, enemy_x, enemy_y))
         {
+	    add_node(&closed_list, q);
+
             while (q->parent && q->parent->parent) // find second node
                 q = q->parent;
 
-            free_list(closed_list, q);
-            free_list(open_list, NULL);
-            return q;
+	    *new_x = q->x;
+	    *new_y = q->y;
+	    free_list(&closed_list);
+            free_list(&open_list);
+            return 1;
         }
 
         add_node(&closed_list, q);
     }
 
-    return NULL;
+    return 0;
 }

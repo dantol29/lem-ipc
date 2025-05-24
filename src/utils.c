@@ -25,9 +25,9 @@ void cleanup_resources(const t_state *state)
 char parse_argv(char **argv)
 {
     const int team = atoi(argv[1]);
-    if (team < 1 || team > 255)
+    if (team < 1 || team > 5)
     {
-        write(1, "Incorrect team number\n", 23);
+        write(2, "Incorrect team number\n", 23);
         exit(1);
     };
     return team;
