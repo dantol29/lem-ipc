@@ -1,16 +1,24 @@
 # IPC Battle Arena - System V Multiplayer Game
 
-![video](https://github.com/dantol29/lem-ipc/blob/main/video.mov)
+![video](https://github.com/dantol29/lem-ipc/blob/main/lem_ipc.gif)
 
 ## Overview
 
-IPC Battle Arena is a multiplayer terminal-based strategy game where players, grouped into teams, battle to be the last team standing on a 2D board. The game is a demonstration of System V IPC mechanisms - shared memory, message queues, and semaphores.
+IPC Battle Arena is a multiplayer strategy game where players, grouped into teams, battle to be the last team standing on a 2D board. The game is a demonstration of System V IPC mechanisms - shared memory, message queues, and semaphores.
 
 Each player is a separate process, and all processes interact through shared memory and message queues, ensuring synchronized access using semaphores.
 
+## Features
+
+1. A\* algorithm for finding the shorthest path
+2. Intuitive UI
+3. Ability to place walls
+
 ## Building & Running
 
-`make && ./start.sh`
+1. `make re`
+2. `./ipc 1`
+3. `./start.sh`
 
 ## Inter-Process Communication
 
@@ -27,7 +35,3 @@ Each player is a separate process, and all processes interact through shared mem
 
 - `ipcs` - list shared memory, semaphores and queues
 - `ipcrm -m id` - delete shared memory
-
-## TODO:
-
-1. do a star for each enemy
